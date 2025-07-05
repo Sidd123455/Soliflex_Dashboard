@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unit 3 Quality Dashboard - June 2025</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3.0.1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.0.0"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            --primary: #3498db;
+            --secondary: #2ecc71;
+            --danger: #e74c3c;
+            --warning: #f39c12;
+            --dark: #2c3e50;
+            --light: #ecf0f1;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        .dashboard {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: linear-gradient(135deg, var(--dark), #1a2a3a);
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2.2rem;
+        }
+        .header h2 {
+            margin: 5px 0 0;
+            font-weight: 300;
+            font-size: 1.3rem;
+        }
+        .card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            padding: 25px;
+            margin-bottom: 25px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+        }
+        .card-header {
+            font-weight: 600;
+            font-size: 1.2rem;
+            border-bottom: 2px solid var(--light);
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+            color: var(--dark);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .card-header i {
+            color: var(--primary);
+        }
+        .kpi-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .kpi {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border-top: 4px solid var(--primary);
+            transition: transform 0.3s ease;
+        }
+        .kpi:hover {
+            transform: translateY(-3px);
+        }
+        .kpi.positive {
+            border-top-color: var(--secondary);
+        }
+        .kpi.negative {
+            border-top-color: var(--danger);
+        }
+        .kpi.warning {
+            border-top-color: var(--warning);
+        }
+        .kpi-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin: 10px 0;
+            color: var(--dark);
+        }
+        .kpi-label {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            font-weight: 500;
+        }
+        .kpi-change {
+            font-size: 0.85rem;
+            margin-top: 5px;
+        }
+        .chart-container {
+            position: relative;
+            height: 350px;
+            margin-bottom: 20px;
+        }
+        .table-container {
+            overflow-x: auto;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        th {
+            background-color: #f5f7fa;
+            font-weight: 600;
+            color: var(--dark);
+            position: sticky;
+            top: 0;
+        }
+        tr:hover {
+            background-color: #f8fafc;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .badge-primary {
+            background-color: rgba(52, 152, 219, 0.1);
+            color: var(--primary);
+        }
+        .badge-danger {
+            background-color: rgba(231, 76, 60, 0.1);
+            color: var(--danger);
+        }
+        .badge-success {
+            background-color: rgba(46, 204, 113, 0.1);
+            color: var(--secondary);
+        }
+        .flex-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+        .tab-container {
+            margin-bottom: 25px;
+        }
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #e0e0e0;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            font-weight: 500;
+            color: #7f8c8d;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .search-filter {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            gap: 15px;
+        }
+        .search-box {
+            flex: 1;
+            max-width: 300px;
+        }
+        .search-box input {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+        .filter-group {
+            display: flex;
+            gap: 15px;
+        }
+        .filter-select {
+            padding: 10px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            background-color: white;
+        }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            gap: 5px;
+        }
+        .page-btn {
+            padding: 8px 12px;
+            border: 1px solid #e0e0e0;
+            background-color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .page-btn:hover {
+            background-color: #f5f7fa;
+        }
+        .page-btn.active {
+            background-color: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        @media (max-width: 768px) {
+            .flex-container {
+                grid-template-columns: 1fr;
+            }
+            .kpi-container {
+                grid-template-columns: 1fr 1fr; /* Two columns for KPIs on smaller screens */
+            }
+            .search-filter {
+                flex-direction: column;
+                align-items: stretch; /* Stretch items to fill width */
+            }
+            .search-box {
+                max-width: 100%;
+            }
+            .filter-group {
+                flex-direction: column; /* Stack filters vertically */
+                gap: 10px;
+            }
+            .filter-select {
+                width: 100%; /* Make select boxes full width */
+            }
+            table, thead, tbody, th, td, tr {
+                display: block; /* Make table elements block-level for stacking */
+            }
+            thead tr {
+                position: absolute;
+                top: -9999px; /* Hide table headers visually */
+                left: -9999px;
+            }
+            tr {
+                border: 1px solid #ccc;
+                margin-bottom: 10px;
+                border-radius: 8px;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            }
+            td {
+                border: none;
+                border-bottom: 1px solid #eee;
+                position: relative;
+                padding-left: 50%; /* Space for pseudo-element label */
+                text-align: right;
+            }
+            td:before {
+                position: absolute;
+                top: 6px;
+                left: 6px;
+                width: 45%;
+                padding-right: 10px;
+                white-space: nowrap;
+                text-align: left;
+                font-weight: bold;
+                color: var(--dark);
+            }
+            /* Data labels for table cells */
+            #reworkTable td:nth-of-type(1):before { content: "Defect Type:"; }
+            #reworkTable td:nth-of-type(2):before { content: "Count:"; }
+            #reworkTable td:nth-of-type(3):before { content: "% of Rework:"; }
+
+            #rejectionTable td:nth-of-type(1):before { content: "Defect Type:"; }
+            #rejectionTable td:nth-of-type(2):before { content: "Count:"; }
+            #rejectionTable td:nth-of-type(3):before { content: "% of Rejection:"; }
+
+            #dailyTable td:nth-of-type(1):before { content: "Date:"; }
+            #dailyTable td:nth-of-type(2):before { content: "Checked:"; }
+            #dailyTable td:nth-of-type(3):before { content: "Rework:"; }
+            #dailyTable td:nth-of-type(4):before { content: "Rework %:"; }
+            #dailyTable td:nth-of-type(5):before { content: "Rejection:"; }
+            #dailyTable td:nth-of-type(6):before { content: "Rejection %:"; }
+            #dailyTable td:nth-of-type(7):before { content: "Status:"; }
+        }
+        @media (max-width: 480px) {
+            .kpi-container {
+                grid-template-columns: 1fr; /* Single column for KPIs on very small screens */
+            }
+            .header h1 {
+                font-size: 1.8rem;
+            }
+            .header h2 {
+                font-size: 1.1rem;
+            }
+            .tab {
+                padding: 8px 15px;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="header">
+            <h1><i class="fas fa-chart-line"></i> Unit 3 Quality Dashboard</h1>
+            <h2>June 2025 Performance Analysis</h2>
+        </div>
+
+        <div class="kpi-container">
+            <div class="kpi negative">
+                <div class="kpi-label"><i class="fas fa-box-open"></i> Total Bags Checked</div>
+                <div class="kpi-value">246,750</div>
+                <div class="kpi-change"><span class="badge badge-danger">-0.93%</span> vs May 2025</div>
+            </div>
+            <div class="kpi warning">
+                <div class="kpi-label"><i class="fas fa-redo"></i> Total Rework Bags</div>
+                <div class="kpi-value">3,670</div>
+                <div class="kpi-label">1.49% rework rate</div>
+                <div class="kpi-change"><span class="badge badge-danger">+1.57%</span> vs May 2025</div>
+            </div>
+            <div class="kpi negative">
+                <div class="kpi-label"><i class="fas fa-times-circle"></i> Total Rejection Bags</div>
+                <div class="kpi-value">2,234</div>
+                <div class="kpi-label">0.91% rejection rate</div>
+                <div class="kpi-change"><span class="badge badge-danger">+1.44</span> vs May 2025</div>
+            </div>
+            <div class="kpi">
+                <div class="kpi-label"><i class="fas fa-exclamation-triangle"></i> Total Defective(Rework & Rejection)</div>
+                <div class="kpi-value">5,904</div>
+                <div class="kpi-label">2.39% defect rate</div>
+                <div class="kpi-change"><span class="badge badge-danger">+1.52</span> vs May 2025</div>
+            </div>
+        </div>
+
+        <div class="flex-container">
+            <div class="card">
+                <div class="card-header">
+                    <span><i class="fas fa-chart-line"></i> Daily Quality Trends</span>
+                    <select class="filter-select" id="trendFilter">
+                        <option value="all">All Metrics</option>
+                        <option value="rework">Rework Only</option>
+                        <option value="rejection">Rejection Only</option>
+                    </select>
+                </div>
+                <div class="chart-container">
+                    <canvas id="dailyTrendChart"></canvas>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <span><i class="fas fa-chart-pie"></i> Defect Distribution</span>
+                    <select class="filter-select" id="defectFilter">
+                        <option value="all">All Defects</option>
+                        <option value="rework">Rework Only</option>
+                        <option value="rejection">Rejection Only</option>
+                    </select>
+                </div>
+                <div class="chart-container">
+                    <canvas id="defectDistributionChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-container">
+            <div class="tabs">
+                <div class="tab active" data-tab="rework">Top Rework Issues</div>
+                <div class="tab" data-tab="rejection">Top Rejection Reasons</div>
+                <div class="tab" data-tab="daily">Daily Performance</div>
+            </div>
+            
+            <div class="tab-content active" id="rework-content">
+                <div class="card">
+                    <div class="card-header">
+                        <span><i class="fas fa-tools"></i> Top Rework Issues</span>
+                        <div class="search-filter">
+                            <div class="search-box">
+                                <input type="text" placeholder="Search defects..." id="reworkSearch">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table id="reworkTable">
+                            <thead>
+                                <tr>
+                                    <th>Defect Type</th>
+                                    <th>Count</th>
+                                    <th>% of Rework</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Printing Rework (Touch up)</td>
+                                    <td>1,434</td>
+                                    <td>39.1%</td>
+                                </tr>
+                                <tr>
+                                    <td>Takka/skip stitching</td>
+                                    <td>681</td>
+                                    <td>18.6%</td>
+                                </tr>
+                                <tr>
+                                    <td>Improper stitch</td>
+                                    <td>556</td>
+                                    <td>15.1%</td>
+                                </tr>
+                                <tr>
+                                    <td>V cut Ravelling</td>
+                                    <td>226</td>
+                                    <td>6.2%</td>
+                                </tr>
+                                <tr>
+                                    <td>Folding open(stitching open)</td>
+                                    <td>313</td>
+                                    <td>8.5%</td>
+                                </tr>
+                                <tr>
+                                    <td>Improper thread cut</td>
+                                    <td>174</td>
+                                    <td>4.7%</td>
+                                </tr>
+                                <tr>
+                                    <td>Damage - Loop / improper stitch</td>
+                                    <td>36</td>
+                                    <td>1.0%</td>
+                                </tr>
+                                <tr>
+                                    <td>Doc Pocket Missing /Damage/Liner Twist</td>
+                                    <td>55</td>
+                                    <td>1.5%</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tab-content" id="rejection-content">
+                <div class="card">
+                    <div class="card-header">
+                        <span><i class="fas fa-ban"></i> Top Rejection Reasons</span>
+                        <div class="search-filter">
+                            <div class="search-box">
+                                <input type="text" placeholder="Search reasons..." id="rejectionSearch">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table id="rejectionTable">
+                            <thead>
+                                <tr>
+                                    <th>Defect Type</th>
+                                    <th>Count</th>
+                                    <th>% of Rejection</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Fabric damage/hole</td>
+                                    <td>1,362</td>
+                                    <td>61.0%</td>
+                                </tr>
+                                <tr>
+                                    <td>CORNER DAMAGE</td>
+                                    <td>353</td>
+                                    <td>15.8%</td>
+                                </tr>
+                                <tr>
+                                    <td>PRINTING REJ</td>
+                                    <td>259</td>
+                                    <td>11.6%</td>
+                                </tr>
+                                <tr>
+                                    <td>V CUT DAMAGE / CUTTING DAMAGE</td>
+                                    <td>193</td>
+                                    <td>8.6%</td>
+                                </tr>
+                                <tr>
+                                    <td>Other Rejection Reasons</td>
+                                    <td>67</td>
+                                    <td>3.0%</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tab-content" id="daily-content">
+                <div class="card">
+                    <div class="card-header">
+                        <span><i class="fas fa-calendar-alt"></i> Daily Performance Details</span>
+                        <div class="search-filter">
+                            <div class="search-box">
+                                <input type="text" placeholder="Search dates..." id="dailySearch">
+                            </div>
+                            <div class="filter-group">
+                                <select class="filter-select" id="dailyFilter">
+                                    <option value="all">All Days</option>
+                                    <option value="high-rework">High Rework Days (>2%)</option>
+                                    <option value="high-rejection">High Rejection Days (>1%)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table id="dailyTable">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Checked</th>
+                                    <th>Rework</th>
+                                    <th>Rework %</th>
+                                    <th>Rejection</th>
+                                    <th>Rejection %</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Jun 1</td>
+                                    <td>1,320</td>
+                                    <td>54</td>
+                                    <td>4.09%</td>
+                                    <td>8</td>
+                                    <td>0.61%</td>
+                                    <td><span class="badge badge-danger">High Rework</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Jun 2</td>
+                                    <td>6,885</td>
+                                    <td>194</td>
+                                    <td>2.82%</td>
+                                    <td>54</td>
+                                    <td>0.78%</td>
+                                    <td><span class="badge badge-warning">Medium Rework</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Jun 3</td>
+                                    <td>7,970</td>
+                                    <td>199</td>
+                                    <td>2.50%</td>
+                                    <td>72</td>
+                                    <td>0.90%</td>
+                                    <td><span class="badge badge-warning">Medium Rework</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Jun 4</td>
+                                    <td>9,995</td>
+                                    <td>181</td>
+                                    <td>1.81%</td>
+                                    <td>61</td>
+                                    <td>0.61%</td>
+                                    <td><span class="badge badge-primary">Normal</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Jun 5</td>
+                                    <td>9,445</td>
+                                    <td>254</td>
+                                    <td>2.69%</td>
+                                    <td>97</td>
+                                    <td>1.03%</td>
+                                    <td><span class="badge badge-warning">Medium Rework</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Jun 6</td>
+                                    <td>10,295</td>
+                                    <td>270</td>
+                                    <td>2.62%</td>
+                                    <td>157</td>
+                                    <td>1.52%</td>
+                                    <td><span class="badge badge-danger">High Rejection</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Jun 7</td>
+                                    <td>8,320</td>
+                                    <td>145</td>
+                                    <td>1.74%</td>
+                                    <td>133</td>
+                                    <td>1.60%</td>
+                                    <td><span class="badge badge-danger">High Rejection</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Jun 8</td>
+                                    <td>2,775</td>
+                                    <td>13</td>
+                                    <td>0.47%</td>
+                                    <td>26</td>
+                                    <td>0.94%</td>
+                                    <td><span class="badge badge-primary">Normal</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Jun 9</td>
+                                    <td>7,530</td>
+                                    <td>128</td>
+                                    <td>1.70%</td>
+                                    <td>91</td>
+                                    <td>1.21%</td>
+                                    <td><span class="badge badge-warning">Medium Rejection</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Jun 10</td>
+                                    <td>9,760</td>
+                                    <td>137</td>
+                                    <td>1.40%</td>
+                                    <td>125</td>
+                                    <td>1.28%</td>
+                                    <td><span class="badge badge-warning">Medium Rejection</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Jun 11</td>
+                                    <td>9,490</td>
+                                    <td>123</td>
+                                    <td>1.30%</td>
+                                    <td>101</td>
+                                    <td>1.06%</td>
+                                    <td><span class="badge badge-warning">Medium Rejection</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Jun 12</td>
+                                    <td>8,580</td>
+                                    <td>134</td>
+                                    <td>1.56%</td>
+                                    <td>64</td>
+                                    <td>0.75%</td>
+                                    <td><span class="badge badge-primary">Normal</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Jun 13</td>
+                                    <td>7,825</td>
+                                    <td>127</td>
+                                    <td>1.62%</td>
+                                    <td>70</td>
+                                    <td>0.89%</td>
+                                    <td><span class="badge badge-primary">Normal</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Jun 14</td>
+                                    <td>9,205</td>
+                                    <td>121</td>
+                                    <td>1.31%</td>
+                                    <td>97</td>
+                                    <td>1.05%</td>
+                                    <td><span class="badge badge-warning">Medium Rejection</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Jun 15</td>
+                                    <td>3,995</td>
+                                    <td>66</td>
+                                    <td>1.65%</td>
+                                    <td>23</td>
+                                    <td>0.58%</td>
+                                    <td><span class="badge badge-primary">Normal</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Jun 16</td>
+                                    <td>10,185</td>
+                                    <td>113</td>
+                                    <td>1.11%</td>
+                                    <td>65</td>
+                                    <td>0.64%</td>
+                                    <td><span class="badge badge-primary">Normal</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Jun 17</td>
+                                    <td>8,450</td>
+                                    <td>95</td>
+                                    <td>1.12%</td>
+                                    <td>77</td>
+                                    <td>0.91%</td>
+                                    <td><span class="badge badge-primary">Normal</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Jun 18</td>
+                                    <td>10,720</td>
+                                    <td>111</td>
+                                    <td>1.04%</td>
+                                    <td>77</td>
+                                    <td>0.72%</td>
+                                    <td><span class="badge badge-primary">Normal</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Jun 19</td>
+                                    <td>9,455</td>
+                                    <td>103</td>
+                                    <td>1.09%</td>
+                                    <td>80</td>
+                                    <td>0.85%</td>
+                                    <td><span class="badge badge-primary">Normal</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Jun 20</td>
+                                    <td>8,115</td>
+                                    <td>90</td>
+                                    <td>1.11%</td>
+                                    <td>96</td>
+                                    <td>1.18%</td>
+                                    <td><span class="badge badge-warning">Medium Rejection</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Jun 21</td>
+                                    <td>6,915</td>
+                                    <td>92</td>
+                                    <td>1.33%</td>
+                                    <td>74</td>
+                                    <td>1.07%</td>
+                                    <td><span class="badge badge-warning">Medium Rejection</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Jun 22</td>
+                                    <td>4,880</td>
+                                    <td>28</td>
+                                    <td>0.57%</td>
+                                    <td>17</td>
+                                    <td>0.35%</td>
+                                    <td><span class="badge badge-success">Excellent</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Jun 23</td>
+                                    <td>9,230</td>
+                                    <td>141</td>
+                                    <td>1.53%</td>
+                                    <td>80</td>
+                                    <td>0.87%</td>
+                                    <td><span class="badge badge-primary">Normal</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Jun 24</td>
+                                    <td>10,855</td>
+                                    <td>103</td>
+                                    <td>0.95%</td>
+                                    <td>81</td>
+                                    <td>0.75%</td>
+                                    <td><span class="badge badge-primary">Normal</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Jun 25</td>
+                                    <td>10,900</td>
+                                    <td>71</td>
+                                    <td>0.65%</td>
+                                    <td>95</td>
+                                    <td>0.87%</td>
+                                    <td><span class="badge badge-primary">Normal</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Jun 26</td>
+                                    <td>11,765</td>
+                                    <td>134</td>
+                                    <td>1.14%</td>
+                                    <td>88</td>
+                                    <td>0.75%</td>
+                                    <td><span class="badge badge-primary">Normal</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Jun 27</td>
+                                    <td>10,100</td>
+                                    <td>138</td>
+                                    <td>1.37%</td>
+                                    <td>79</td>
+                                    <td>0.78%</td>
+                                    <td><span class="badge badge-primary">Normal</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Jun 28</td>
+                                    <td>11,220</td>
+                                    <td>152</td>
+                                    <td>1.35%</td>
+                                    <td>71</td>
+                                    <td>0.63%</td>
+                                    <td><span class="badge badge-primary">Normal</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Jun 29</td>
+                                    <td>1,000</td>
+                                    <td>7</td>
+                                    <td>0.70%</td>
+                                    <td>2</td>
+                                    <td>0.20%</td>
+                                    <td><span class="badge badge-success">Excellent</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Jun 30</td>
+                                    <td>9,570</td>
+                                    <td>146</td>
+                                    <td>1.53%</td>
+                                    <td>73</td>
+                                    <td>0.76%</td>
+                                    <td><span class="badge badge-primary">Normal</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination">
+                        <button class="page-btn"><i class="fas fa-chevron-left"></i></button>
+                        <button class="page-btn active">1</button>
+                        <button class="page-btn">2</button>
+                        <button class="page-btn">3</button>
+                        <button class="page-btn"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <span><i class="fas fa-lightbulb"></i> Key Insights & Recommendations</span>
+            </div>
+            <div style="padding: 15px;">
+                <h3 style="color: var(--dark); margin-top: 0;">Quality Performance Analysis</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+	           <div>
+                        <h4><i class="fas fa-check-circle" style="color: var(--secondary);"></i> Rework Control Acceptance</h4>
+                        <ul>
+                            <li>Rework control implements</li>
+			    <li>Control the faults of Rework</li> 
+                        </ul>
+                    </div>
+
+		    <div>
+                        <h4><i class="fas fa-check-circle" style="color: var(--secondary);"></i> Rejection Control Acceptance</h4>
+                        <ul>
+                            <li>Rejection control implements</li>
+			    <li>Control the rejection faults</li>
+                        </ul>
+                    </div>
+		    <div>
+                        <h4><i class="fas fa-check-circle" style="color: var(--secondary);"></i> Positive Findings</h4>
+                        <ul>
+                            <li>June 22nd and 29th showed excellent quality performance</li>
+                            <li>Second half of month showed more consistent quality</li>
+			    <li>Suggestion box for improvement</li>
+			    <li>Tailor rejection and rework record</li>
+			    <li>Balling tracking file for avoiding mistakes</li>
+			    <li>Checkers hourly inspection report for analysing daily total reworks and rejections</li>
+			    <li>Continously arrange the training meeting of workers and supervisors for reduce the rejection and rework rate.</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4><i class="fas fa-exclamation-circle" style="color: var(--danger);"></i> Problem Areas</h4>
+                        <ul>
+                            <li>Fabric damage is 61.0% of rejections - serious material quality issue</li>
+                            <li>June 6-7 had highest rejection rates (>1.5%) - production issues</li>
+                            <li>Total checked bags decreased by 0.93% vs May</li>
+                        </ul>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tab functionality
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById(`${tab.dataset.tab}-content`).classList.add('active');
+            });
+        });
+
+        // Search functionality for tables
+        document.getElementById('reworkSearch').addEventListener('input', (e) => {
+            filterTable('reworkTable', e.target.value);
+        });
+        document.getElementById('rejectionSearch').addEventListener('input', (e) => {
+            filterTable('rejectionTable', e.target.value);
+        });
+        document.getElementById('dailySearch').addEventListener('input', (e) => {
+            filterTable('dailyTable', e.target.value);
+        });
+
+        function filterTable(tableId, searchText) {
+            const table = document.getElementById(tableId);
+            const rows = table.querySelectorAll('tbody tr');
+            searchText = searchText.toLowerCase();
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchText) ? '' : 'none';
+            });
+        }
+
+        // Filter functionality for daily table
+        document.getElementById('dailyFilter').addEventListener('change', (e) => {
+            const filter = e.target.value;
+            const table = document.getElementById('dailyTable');
+            const rows = table.querySelectorAll('tbody tr');
+            
+            rows.forEach(row => {
+                if (filter === 'all') {
+                    row.style.display = '';
+                } else if (filter === 'high-rework') {
+                    const reworkPercent = parseFloat(row.cells[3].textContent);
+                    row.style.display = reworkPercent > 2 ? '' : 'none';
+                } else if (filter === 'high-rejection') {
+                    const rejectionPercent = parseFloat(row.cells[5].textContent);
+                    row.style.display = rejectionPercent > 1 ? '' : 'none';
+                }
+            });
+        });
+
+        // Charts
+        Chart.register(ChartDataLabels);
+        
+        // Daily Trend Chart
+        const dailyTrendCtx = document.getElementById('dailyTrendChart').getContext('2d');
+        const dailyTrendChart = new Chart(dailyTrendCtx, {
+            type: 'line',
+            data: {
+                labels: Array.from({length: 30}, (_, i) => `Jun ${i+1}`),
+                datasets: [
+                    {
+                        label: 'Rework %',
+                        data: [4.09, 2.82, 2.50, 1.81, 2.69, 2.62, 1.74, 0.47, 1.70, 1.40, 1.30, 1.56, 1.62, 1.31, 1.65, 1.11, 1.12, 1.04, 1.09, 1.11, 1.33, 0.57, 1.53, 0.95, 0.65, 1.14, 1.37, 1.35, 0.70, 1.53],
+                        borderColor: '#f39c12',
+                        backgroundColor: 'rgba(243, 156, 18, 0.1)',
+                        tension: 0.3,
+                        fill: true,
+                        borderWidth: 2,
+                        pointBackgroundColor: '#f39c12',
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    },
+                    {
+                        label: 'Rejection %',
+                        data: [0.61, 0.78, 0.90, 0.61, 1.03, 1.52, 1.60, 0.94, 1.21, 1.28, 1.06, 0.75, 0.89, 1.05, 0.58, 0.64, 0.91, 0.72, 0.85, 1.18, 1.07, 0.35, 0.87, 0.75, 0.87, 0.75, 0.78, 0.63, 0.20, 0.76],
+                        borderColor: '#e74c3c',
+                        backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                        tension: 0.3,
+                        fill: true,
+                        borderWidth: 2,
+                        pointBackgroundColor: '#e74c3c',
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    },
+                    {
+                        label: 'Target (Rework)',
+                        data: Array(30).fill(1.0),
+                        borderColor: '#2ecc71',
+                        borderWidth: 1,
+                        borderDash: [5, 5],
+                        backgroundColor: 'transparent',
+                        pointRadius: 0,
+                        fill: false
+                    },
+                    {
+                        label: 'Target (Rejection)',
+                        data: Array(30).fill(0.5),
+                        borderColor: '#27ae60',
+                        borderWidth: 1,
+                        borderDash: [5, 5],
+                        backgroundColor: 'transparent',
+                        pointRadius: 0,
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    legend: {
+                        position: 'top',
+                    },
+                    datalabels: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Percentage (%)'
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                },
+                interaction: {
+                    intersect: false,
+                    mode: 'nearest'
+                }
+            }
+        });
+
+        // Defect Distribution Chart
+        const defectDistributionCtx = document.getElementById('defectDistributionChart').getContext('2d');
+        const defectDistributionChart = new Chart(defectDistributionCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Printing Rework', 'Takka/skip stitching', 'Improper stitch', 'V cut Ravelling', 'Folding open', 'Other Rework', 'Fabric damage', 'Corner damage', 'Printing Rejection', 'V cut damage'],
+                datasets: [{
+                    data: [1434, 681, 556, 226, 313, 60, 1362, 353, 259, 193],
+                    backgroundColor: [
+                        '#3498db',
+                        '#2ecc71',
+                        '#f1c40f',
+                        '#e67e22',
+                        '#9b59b6',
+                        '#34495e',
+                        '#e74c3c',
+                        '#1abc9c',
+                        '#d35400',
+                        '#7f8c8d'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.raw || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = Math.round((value / total) * 100);
+                                return `${label}: ${value} (${percentage}%)`;
+                            }
+                        }
+                    },
+                    datalabels: {
+                        formatter: (value, ctx) => {
+                            const datasets = ctx.chart.data.datasets;
+                            if (datasets.indexOf(ctx.dataset) === datasets.length - 1) {
+                                const sum = datasets[0].data.reduce((a, b) => a + b, 0);
+                                const percentage = Math.round((value / sum) * 100);
+                                return percentage > 5 ? `${percentage}%` : '';
+                            }
+                            return '';
+                        },
+                        color: '#fff',
+                        font: {
+                            weight: 'bold'
+                        }
+                    }
+                },
+                cutout: '65%',
+                animation: {
+                    animateScale: true,
+                    animateRotate: true
+                }
+            }
+        });
+
+        // Chart filter functionality
+        document.getElementById('trendFilter').addEventListener('change', (e) => {
+            const filter = e.target.value;
+            
+            dailyTrendChart.data.datasets.forEach(dataset => {
+                dataset.hidden = true;
+            });
+            
+            if (filter === 'all') {
+                dailyTrendChart.data.datasets.forEach(dataset => {
+                    dataset.hidden = false;
+                });
+            } else if (filter === 'rework') {
+                dailyTrendChart.data.datasets[0].hidden = false;
+                dailyTrendChart.data.datasets[2].hidden = false;
+            } else if (filter === 'rejection') {
+                dailyTrendChart.data.datasets[1].hidden = false;
+                dailyTrendChart.data.datasets[3].hidden = false;
+            }
+            
+            dailyTrendChart.update();
+        });
+
+        document.getElementById('defectFilter').addEventListener('change', (e) => {
+            const filter = e.target.value;
+            
+            if (filter === 'all') {
+                defectDistributionChart.data.labels = ['Printing Rework', 'Takka/skip stitching', 'Improper stitch', 'V cut Ravelling', 'Folding open', 'Other Rework', 'Fabric damage', 'Corner damage', 'Printing Rejection', 'V cut damage'];
+                defectDistributionChart.data.datasets[0].data = [1434, 681, 556, 226, 313, 60, 1362, 353, 259, 193];
+            } else if (filter === 'rework') {
+                defectDistributionChart.data.labels = ['Printing Rework', 'Takka/skip stitching', 'Improper stitch', 'V cut Ravelling', 'Folding open', 'Other Rework'];
+                defectDistributionChart.data.datasets[0].data = [1434, 681, 556, 226, 313, 60];
+            } else if (filter === 'rejection') {
+                defectDistributionChart.data.labels = ['Fabric damage', 'Corner damage', 'Printing Rejection', 'V cut damage', 'Other Rejection'];
+                defectDistributionChart.data.datasets[0].data = [1362, 353, 259, 193, 67];
+            }
+            
+            defectDistributionChart.update();
+        });
+    </script>
+</body>
+</html>
